@@ -1,8 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Record_Exercise_REST.Models;
 using Record_Exercise_REST.Repositories;
-
-// For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+using System.Collections.Generic;
 
 namespace Record_Exercise_REST.Controllers
 {
@@ -11,7 +10,7 @@ namespace Record_Exercise_REST.Controllers
     public class RecordsController : ControllerBase
     {
         private readonly RecordsRepository _records = new RecordsRepository();
-      
+
         // GET: api/<RecordsController>
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
@@ -22,39 +21,61 @@ namespace Record_Exercise_REST.Controllers
 
         // GET api/<RecordsController>/5
         [HttpGet("{id}")]
-        public string Get(int id)
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public ActionResult<MusicRecord> Get(int id)
         {
-            return "value";
+         MusicRecord? musicRecord = _records.GetById(id);
+            if (musicRecord == null) return NotFound("No such record, id:" + id);
+            return Ok(musicRecord);
+            
         }
 
         // POST api/<RecordsController>
         [HttpPost]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public ActionResult<MusicRecord> Post([FromBody] MusicRecord value)
-        {
-            try 
-            { 
-            MusicRecord newMusicRecord = _records.Add(value);
-                string uri = Url.RouteUrl(RouteData.Values) + "/" + newMusicRecord.Id;
-                return Created(uri, newMusicRecord);
-            }
-            catch (ArgumentException ex)
-            {
-                return BadRequest(ex.Message);
-            }
-        }
+        public ActionResult<MusicRecord> Post([FromBody] MusicRecord newMusicRecord)
+        { 
+                MusicRecord createdMusicRecord = _records.Add(newMusicRecord);
+                if (createdMusicRecord == null)
+                {
+                    return BadRequest();
+                }
+                else
+               {
+                return Created("MusicRecord object created", createdMusicRecord);
+               }
+             }
 
         // PUT api/<RecordsController>/5
         [HttpPut("{id}")]
-        public void Put(int id, [FromBody] string value)
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public IActionResult Put(int id, [FromBody] MusicRecord value)
         {
+            var existingRecord = _records.GetById(id);
+            if (existingRecord == null)
+            {
+                return NotFound();
+            }
+            _records.Update(id, value);
+            return NoContent();
         }
 
         // DELETE api/<RecordsController>/5
         [HttpDelete("{id}")]
-        public void Delete(int id)
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public IActionResult Delete(int id)
         {
+            var record = _records.GetById(id);
+            if (record == null)
+            {
+                return NotFound();
+            }
+            _records.Delete(id);
+            return NoContent();
         }
     }
 }
